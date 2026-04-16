@@ -1,6 +1,7 @@
 import streamlit as st
 import io
 import pdfplumber
+import agents
 
 # Function to extract text from a PDF
 
@@ -42,8 +43,14 @@ if st.button("Tailor my Resume"):
         if error:
             st.error(error)
         else:
-            st.success("Resume extracted succesfully!")
+            st.success("Resume extracted successfully!")
             st.text_area("Extracted Resume Text", value = text, height=200)
+            resume_json, error = agents.extract_resume_to_json(text)
+            if error:
+                st.error(error)
+            else:
+                st.success("Resume parsed successfully!")
+                st.json(resume_json)
     else:
         st.error("Please upload a resume and paste a job description.")
         
