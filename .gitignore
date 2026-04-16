@@ -16,3 +16,7 @@ Thumbs.db
 
 # Streamlit's local config
 .streamlit/secrets.toml
+
+# Generated output files
+tailored_resume.pdf
+*.pdf

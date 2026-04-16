@@ -2,6 +2,7 @@ import streamlit as st
 import io
 import pdfplumber
 from agents import extract_resume_to_json, tailor_resume, audit_resume
+from pdf_generator import generate_resume_pdf
 
 # ── Session State Initialization ──────────────────────────────
 if "stage" not in st.session_state:
@@ -76,6 +77,14 @@ st.title("🎯 AI Resume Tailor")
 upload_file = st.file_uploader("Upload your resume (PDF only)", type=["pdf"])
 job_description = st.text_area("Paste job description here...", height=200)
 
+if st.button("Reset"):
+    st.session_state.stage = 0
+    st.session_state.resume_text = None
+    st.session_state.resume_json = None
+    st.session_state.tailored_json = None
+    st.session_state.audit_json = None
+    st.rerun()
+
 if st.button("Tailor my Resume"):
    if upload_file is not None and job_description.strip():
        run_pipeline(upload_file, job_description)
@@ -106,3 +115,17 @@ if st.session_state.stage == 4:
 
     st.metric("ATS Score", f"{score}/100")
     st.json(st.session_state.audit_json)
+    
+    if st.button("Generate PDF"):
+        output_path = generate_resume_pdf(
+            st.session_state.tailored_json
+        )
+        with open(output_path, "rb") as f:
+            st.download_button(
+                label="📥 Download ATS Resume",
+                data=f,
+                file_name="tailored_resume.pdf",
+                mime="application/pdf"
+            )
+        st.success("PDF generated successfully!")
+        

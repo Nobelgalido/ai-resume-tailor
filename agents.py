@@ -31,13 +31,16 @@ def extract_resume_to_json(resume_text: str) -> tuple:
     try:
         response = client.messages.create(
             model="claude-haiku-4-5",
-            max_tokens=2048,
+            max_tokens=3000,
             system="""You are a resume parser. Extract the resume into JSON.
             Return ONLY valid JSON with these exact keys:
             {
                 "name": "",
                 "email": "",
                 "phone": "",
+                "address": "",
+                "linkedin": "",
+                "github": "",
                 "title": "",
                 "summary": "",
                 "skills": [],
@@ -49,13 +52,27 @@ def extract_resume_to_json(resume_text: str) -> tuple:
                         "achievements": []
                     }
                 ],
+                "projects": [
+                    {
+                        "name": "",
+                        "description": "",
+                        "technologies": []
+                    }
+                ],
                 "education": [
                     {
                         "institution": "",
                         "degree": "",
                         "year": ""
                     }
-                ]
+                ],
+                "certifications": [
+                    {
+                        "name": "",
+                        "issuer": "",
+                        "year": ""
+                    }
+                ],
             }
             Return ONLY the JSON object. No explanation. No markdown. No code blocks.""",
             messages=[
@@ -82,20 +99,29 @@ def tailor_resume(resume_json: dict, job_description: str) -> tuple:
     try:
         response = client.messages.create(
             model="claude-sonnet-4-5",
-            max_tokens=4096,
+            max_tokens=6000,
             system="""You are an expert resume writer and ATS optimization specialist.
-            
-Your job is to rewrite a resume to better match a job description.
+            Your goal is to maximize ATS compatibility while maintaining complete honesty.
 
 STRICT RULES:
 1. Return ONLY valid JSON in the exact same structure as the input
 2. Never invent experience, skills, or qualifications that don't exist
 3. Never change company names, job titles, or employment dates
-4. DO rewrite achievement bullets to mirror keywords from the job description
-5. DO add relevant technical skills that are mentioned in the job description IF the resume implies familiarity
-6. DO quantify achievements where possible
-7. DO use the exact terminology and keywords from the job description
-8. Never add explanations or text outside the JSON structure""",
+4. Never add skills the candidate has not demonstrated in their resume
+
+KEYWORD ALIGNMENT:
+5. Rewrite every achievement bullet using exact keywords from the job description
+6. Rewrite project descriptions to mirror keywords from the job description
+7. Rephrase existing experience to mirror the job description's exact language
+8. Only add skills explicitly present OR strongly implied by existing experience
+   Example: React experience implies JavaScript knowledge ✅
+   Example: No cloud experience → don't add AWS ❌
+9. Rewrite the summary to reflect the job description's terminology exactly
+10. Quantify achievements with realistic metrics where possible
+
+FORMATTING:
+11. Keep every section clean and concise
+12. Never add explanations or text outside the JSON structure""",
             messages=[
                 {
                     "role": "user",
@@ -118,12 +144,8 @@ Return the tailored resume in the exact same JSON structure."""
         return tailored_json, None
 
     except json.JSONDecodeError as e:
-        print("=== JSON ERROR ===")
-        print(str(e))
         return None, "Tailor returned invalid JSON. Please try again."
     except Exception as e:
-        print("=== EXCEPTION ERROR ===")
-        print(str(e))
         return None, f"Tailoring failed: {str(e)}"
     
 def audit_resume(tailored_json: dict, job_description: str) -> tuple:
@@ -144,6 +166,7 @@ def audit_resume(tailored_json: dict, job_description: str) -> tuple:
                 "matched_keywords": [],
                 "missing_keywords": [],
                 "suggestions": []}
+            - "score" MUST be a whole number integer between 0 and 100. Never use decimals.
             - No explanation, No markdown, no code blocks""",
             messages=[
                 {
