@@ -1,0 +1,18 @@
+# Python virtual environment
+venv/
+.venv/
+
+# Environment variables — PROTECTS YOUR API KEY
+.env
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# OS junk files
+.DS_Store
+Thumbs.db
+
+# Streamlit's local config
+.streamlit/secrets.toml
