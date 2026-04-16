@@ -46,19 +46,22 @@ if st.button("Tailor my Resume"):
         else:
             st.success("Resume extracted successfully!")
             st.text_area("Extracted Resume Text", value = text, height=200)
-            resume_json, error = extract_resume_to_json(text)
+            with st.spinner("Agent 1: Parsing resume..."):
+                resume_json, error = extract_resume_to_json(text)
             if error:
                 st.error(error)
             else:
                 st.success("Resume parsed successfully!")
                 st.json(resume_json)
-                tailored_json, error = tailor_resume(resume_json, job_description)
+                with st.spinner("Agent 2: Tailoring resume...(this may take 20-30 seconds)"):
+                    tailored_json, error = tailor_resume(resume_json, job_description)
                 if error:
                     st.error(error)
                 else:
                     st.success("Resume tailored successfully!")
                     st.json(tailored_json)
-                    audit_json, error = audit_resume(tailored_json, job_description)
+                    with st.spinner("Agent 3: Auditing resume..."):
+                        audit_json, error = audit_resume(tailored_json, job_description)
                     if error:
                         st.error(error)
                     else:
@@ -66,10 +69,3 @@ if st.button("Tailor my Resume"):
                         st.json(audit_json)
     else:
         st.error("Please upload a resume and paste a job description.")
-        
-
-
-
-
-
-                    

@@ -7,6 +7,21 @@ load_dotenv()
 
 client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
+def clean_json_response(raw: str) -> str:
+    """
+    Strips markdown code blocks from Claude's response.
+    Handles ```json ... ``` and ``` ... wrapping.
+    """
+    
+    raw = raw.strip()
+    if raw.startswith("```"):
+        # Remove first line (```json or ```)
+        raw = raw.split("\n", 1)[1]
+        # Remove closing ```
+        raw = raw.rsplit("```", 1)[0]
+    return raw.strip()
+
+
 def extract_resume_to_json(resume_text: str) -> tuple:
     """
     Agent 1: Extracts raw resume text into structured JSON.
@@ -49,8 +64,7 @@ def extract_resume_to_json(resume_text: str) -> tuple:
         )
 
         raw = response.content[0].text
-
-        # Parse the JSON string into a Python dictionary
+        raw = clean_json_response(raw)
         resume_json = json.loads(raw)
         return resume_json, None
 
@@ -99,12 +113,17 @@ Return the tailored resume in the exact same JSON structure."""
         )
 
         raw = response.content[0].text
+        raw = clean_json_response(raw)
         tailored_json = json.loads(raw)
         return tailored_json, None
 
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print("=== JSON ERROR ===")
+        print(str(e))
         return None, "Tailor returned invalid JSON. Please try again."
     except Exception as e:
+        print("=== EXCEPTION ERROR ===")
+        print(str(e))
         return None, f"Tailoring failed: {str(e)}"
     
 def audit_resume(tailored_json: dict, job_description: str) -> tuple:
@@ -140,6 +159,7 @@ JOB DESCRIPTION:
         )
         
         raw = response.content[0].text
+        raw = clean_json_response(raw)
         audit_json = json.loads(raw)
         return audit_json, None
     
