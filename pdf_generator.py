@@ -1,4 +1,5 @@
 from fpdf import FPDF
+from datetime import date
 import os
 
 def sanitize(text: str) -> str:
@@ -111,6 +112,7 @@ def generate_resume_pdf(tailored_json: dict) -> str:
     if tailored_json.get("experience"):
         section_header("Professional Experience")
         for job in tailored_json["experience"]:
+            pdf.ln(3)
             pdf.set_font("Helvetica", "B", 11)
             pdf.cell(0, 7, sanitize(job.get("role", "")), ln=True)
             pdf.set_font("Helvetica", "I", 10)
@@ -161,5 +163,56 @@ def generate_resume_pdf(tailored_json: dict) -> str:
             
     # ── Save ──────────────────────────────────────────────────
     output_path = "tailored_resume.pdf"
+    pdf.output(output_path)
+    return output_path
+
+def generate_cover_letter_pdf(cover_letter_json: dict, candidate_name: str) -> str:
+    """
+    Generates a PDF from the cover letter JSON.
+    Returns the file path of the generated PDF.
+    """
+    print(f"=== PDF NAME RECEIVED: '{candidate_name}' ===")
+    pdf = FPDF()
+    pdf.set_margins(15, 15, 15)
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_x(pdf.l_margin)
+
+    effective_width = pdf.w - 2 * pdf.l_margin
+
+    # ── Header ────────────────────────────────────────────────
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 8, sanitize(candidate_name), ln=True, align="C")
+    pdf.ln(4)
+    pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+    pdf.ln(8)
+
+    # ── Date & Salutation ─────────────────────────────────────
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 6, str(date.today()), ln=True)
+    pdf.ln(4)
+    pdf.cell(0, 6, sanitize(cover_letter_json["salutation"]), ln=True)
+    pdf.ln(4)
+
+    # ── Opening Paragraph ─────────────────────────────────────
+    pdf.multi_cell(effective_width, 6, sanitize(cover_letter_json["opening_paragraph"]))
+    pdf.ln(6)
+
+    # ── Body Paragraphs ───────────────────────────────────────
+    for paragraph in cover_letter_json["body_paragraphs"]:
+        pdf.multi_cell(effective_width, 6, sanitize(paragraph))
+        pdf.ln(6)
+
+    # ── Closing Paragraph ─────────────────────────────────────
+    pdf.multi_cell(effective_width, 6, sanitize(cover_letter_json["closing_paragraph"]))
+    pdf.ln(10)
+
+    # ── Sign-off & Signature ──────────────────────────────────
+    pdf.cell(0, 6, sanitize(cover_letter_json["sign_off"]), ln=True)
+    pdf.ln(6)
+    pdf.cell(0, 6, sanitize(candidate_name), ln=True)
+
+    # ── Save ──────────────────────────────────────────────────
+    output_path = "cover_letter.pdf"
     pdf.output(output_path)
     return output_path
